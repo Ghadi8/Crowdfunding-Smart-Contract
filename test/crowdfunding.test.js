@@ -10,6 +10,9 @@ chai.use(chaiAsPromised);
 // load contract artifact
 const Crowdfunding = artifacts.require("Crowdfunding");
 
+// utils
+const { toTokens } = require("../utils/test-utils")(web3);
+
 contract("Crowdfunding", (accounts) => {
   let txStack = [];
   const deploy = async (contracts) =>
@@ -24,18 +27,28 @@ contract("Crowdfunding", (accounts) => {
 
   it("user can create a crowdfunding project", async () => {
     let { crowdfunding } = await withContracts();
-    let tx = await crowdfunding.createProject("Test", "Test project", {
-      from: accounts[0],
-    });
+    let tx = await crowdfunding.createProject(
+      "Test",
+      "Test project",
+      toTokens("0.5"),
+      {
+        from: accounts[0],
+      }
+    );
 
     txStack.push(tx);
   });
 
   it("same user can create multiple projects", async () => {
     let { crowdfunding } = await withContracts();
-    let tx = await crowdfunding.createProject("Test2", "Second test project", {
-      from: accounts[0],
-    });
+    let tx = await crowdfunding.createProject(
+      "Test2",
+      "Second test project",
+      toTokens("1"),
+      {
+        from: accounts[0],
+      }
+    );
 
     txStack.push(tx);
   });
@@ -45,7 +58,7 @@ contract("Crowdfunding", (accounts) => {
     let tx = await crowdfunding
       .participateToProject(0, {
         from: accounts[0],
-        value: 1,
+        value: toTokens("0.5"),
       })
       .then(() => {
         assert.fail("owner shouldnt be able to donate to his project");
@@ -61,7 +74,7 @@ contract("Crowdfunding", (accounts) => {
     let { crowdfunding } = await withContracts();
     let tx = await crowdfunding.participateToProject(0, {
       from: accounts[1],
-      value: 3,
+      value: toTokens("3"),
     });
     txStack.push(tx);
   });
@@ -70,7 +83,7 @@ contract("Crowdfunding", (accounts) => {
     let { crowdfunding } = await withContracts();
     let tx = await crowdfunding.participateToProject(0, {
       from: accounts[1],
-      value: 5,
+      value: toTokens("5"),
     });
     txStack.push(tx);
   });
@@ -79,7 +92,7 @@ contract("Crowdfunding", (accounts) => {
     let { crowdfunding } = await withContracts();
     let tx = await crowdfunding.participateToProject(0, {
       from: accounts[3],
-      value: 1,
+      value: toTokens("1"),
     });
     txStack.push(tx);
   });
@@ -91,16 +104,20 @@ contract("Crowdfunding", (accounts) => {
     assert.equal(tx[1], "Test");
     assert.equal(tx[2], "Test project");
     assert.equal(tx[3], accounts[0]);
-    assert.equal(tx[4], 9);
+    assert.equal(tx[4], toTokens("0.5"));
+    assert.equal(tx[5], toTokens("9"));
     txStack.push(tx);
   });
 
-  it("user should be able to retrieve total donations done by specific address", async () => {
+  it("user should be able to retrieve all contributions made by a specific address", async () => {
     let { crowdfunding } = await withContracts();
     let tx = await crowdfunding.getContributions(0, accounts[1], {
       from: accounts[2],
     });
+
     assert.equal(tx[0], accounts[1]);
-    assert.equal(tx[1], 8);
+    assert.equal(tx[1][0], toTokens("3"));
+    assert.equal(tx[1][1], toTokens("5"));
+    txStack.push(tx);
   });
 });

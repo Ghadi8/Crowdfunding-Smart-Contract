@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title Crowdfunding dApp
+ * @title Crowdfunding
  * @author Ghadi Mhawej
  */
 
@@ -24,7 +24,7 @@ contract Crowdfunding {
 
     /// @notice amount contributed by an address to a project
 
-    mapping(uint256 => mapping(address => uint256)) contributions;
+    mapping(uint256 => mapping(address => uint256[])) contributions;
 
     /// @notice array of all crowdfunding projects
 
@@ -47,11 +47,12 @@ contract Crowdfunding {
      * @notice creating a project
      * @param _projectTitle setting the project title
      * @param _projectDescription setting the project desciption
+     * @param _projectParticipationAmount minimum amount required to participate
      **/
-
     function createProject(
         string memory _projectTitle,
-        string memory _projectDescription
+        string memory _projectDescription,
+        uint256 _projectParticipationAmount
     ) public {
         Project memory project = Project(
             autoIncrementProjectID,
@@ -59,7 +60,7 @@ contract Crowdfunding {
             _projectDescription,
             msg.sender,
             payable(msg.sender),
-            0,
+            _projectParticipationAmount,
             0
         );
         autoIncrementProjectID++;
@@ -76,13 +77,15 @@ contract Crowdfunding {
         payable
         contributors(_projectID)
     {
-        require(msg.value > 0, "the contribution must be greater than 0");
+        require(
+            msg.value >= projects[_projectID].projectParticipationAmount,
+            "Contribution is less than minimal project participation amount"
+        );
         projects[_projectID].author.transfer(msg.value);
-        projects[_projectID].projectParticipationAmount = msg.value;
         projects[_projectID].projectTotalFundingAmount += msg.value;
-        contributions[projects[_projectID].projectID][msg.sender] =
-            contributions[projects[_projectID].projectID][msg.sender] +
-            msg.value;
+        contributions[projects[_projectID].projectID][msg.sender].push(
+            msg.value
+        );
     }
 
     /**
@@ -98,6 +101,7 @@ contract Crowdfunding {
             string memory,
             string memory,
             address,
+            uint256,
             uint256
         )
     {
@@ -106,6 +110,7 @@ contract Crowdfunding {
             projects[_projectID].projectTitle,
             projects[_projectID].projectDescription,
             projects[_projectID].projectOwner,
+            projects[_projectID].projectParticipationAmount,
             projects[_projectID].projectTotalFundingAmount
         );
     }
@@ -119,7 +124,7 @@ contract Crowdfunding {
     function getContributions(uint256 _projectID, address _contributor)
         public
         view
-        returns (address, uint256)
+        returns (address, uint256[] memory)
     {
         return (
             _contributor,
