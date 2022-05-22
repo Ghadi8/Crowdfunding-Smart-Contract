@@ -2,9 +2,11 @@ const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require("fs");
 
 const infuraKey = "7b228409b36d4a2989d11e9779a6dd5c";
+const vigilKey = "a20bb683dc98cfa1bd737bbc55c48fa3ec00daed";
 
 const key_TESTNET = fs.readFileSync(".test.secret").toString().trim();
 const key_MAINNET = fs.readFileSync(".main.secret").toString().trim();
+const key_MUMBAI = fs.readFileSync(".mumbai.secret").toString().trim();
 module.exports = {
   contracts_build_directory: "./abis",
   networks: {
@@ -39,6 +41,19 @@ module.exports = {
       gasPrice: 75000000000, // 75
       confirmations: 1,
       timeoutBlocks: 400,
+      skipDryRun: true,
+    },
+    mumbai: {
+      provider: () =>
+        new HDWalletProvider({
+          privateKeys: [key_MUMBAI],
+          providerOrUrl: `https://rpc-mumbai.maticvigil.com/v1/${vigilKey}`,
+        }),
+      network_id: 80001,
+      gas: 6000000,
+      gasPrice: 10000000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
       skipDryRun: true,
     },
   },
